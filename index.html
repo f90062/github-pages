@@ -1,0 +1,1382 @@
+# 百家樂牌路分析系統 - 智能優化版
+
+我將為您設計一個完整的百家樂牌路分析系統，加入智能準確率追蹤功能，並優化移動設備的用戶體驗。
+
+```html
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>智能百家樂牌路分析系統</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #1a2a3a 0%, #0d1b2a 100%);
+            color: #e0e0e0;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 15px;
+        }
+        
+        header {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            color: #f8f9fa;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #e74c3c, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            color: #95a5a6;
+            font-size: 0.95rem;
+        }
+        
+        /* 左側控制面板 */
+        .control-panel {
+            background: rgba(30, 40, 50, 0.85);
+            border-radius: 15px;
+            padding: 20px 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .panel-title {
+            font-size: 1.2rem;
+            color: #3498db;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 5px;
+            border-radius: 12px;
+            background: rgba(40, 55, 70, 0.9);
+            border: 1px solid #2c3e50;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            aspect-ratio: 1/1;
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+            background: rgba(50, 70, 90, 0.9);
+        }
+        
+        .btn-banker {
+            border-top: 3px solid #e74c3c;
+        }
+        
+        .btn-player {
+            border-top: 3px solid #3498db;
+        }
+        
+        .btn-tie {
+            border-top: 3px solid #2ecc71;
+        }
+        
+        .btn-icon {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+        
+        .btn-banker .btn-icon {
+            color: #e74c3c;
+        }
+        
+        .btn-player .btn-icon {
+            color: #3498db;
+        }
+        
+        .btn-tie .btn-icon {
+            color: #2ecc71;
+        }
+        
+        .btn-label {
+            font-size: 0.85rem;
+            color: #ecf0f1;
+            text-align: center;
+        }
+        
+        .dot-container {
+            display: flex;
+            gap: 3px;
+            margin-top: 5px;
+        }
+        
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        .dot-red {
+            background: #e74c3c;
+            border: 1px solid #c0392b;
+        }
+        
+        .dot-blue {
+            background: #3498db;
+            border: 1px solid #2980b9;
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .ctrl-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(44, 62, 80, 0.9);
+            border: 1px solid #34495e;
+            color: #ecf0f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .ctrl-btn:active {
+            background: rgba(52, 73, 94, 0.9);
+        }
+        
+        /* 右側內容區 */
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .card {
+            background: rgba(30, 40, 50, 0.85);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+        }
+        
+        .input-preview {
+            min-height: 120px;
+        }
+        
+        .preview-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .counter {
+            background: #3498db;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .log-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            min-height: 80px;
+            align-content: flex-start;
+        }
+        
+        .log-item {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            position: relative;
+        }
+        
+        .log-banker {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            box-shadow: 0 3px 8px rgba(231, 76, 60, 0.3);
+        }
+        
+        .log-player {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            box-shadow: 0 3px 8px rgba(52, 152, 219, 0.3);
+        }
+        
+        .log-tie {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            box-shadow: 0 3px 8px rgba(46, 204, 113, 0.3);
+        }
+        
+        .pair-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid white;
+        }
+        
+        .dot-banker {
+            background: #e74c3c;
+            top: 2px;
+            left: 2px;
+        }
+        
+        .dot-player {
+            background: #3498db;
+            bottom: 2px;
+            right: 2px;
+        }
+        
+        .prediction-container {
+            min-height: 200px;
+        }
+        
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .accuracy-display {
+            background: #9b59b6;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .accuracy-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .prediction-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        
+        .prediction-card {
+            background: rgba(44, 62, 80, 0.7);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.3s ease;
+            border: 1px solid #34495e;
+        }
+        
+        .prediction-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .prediction-card.banker {
+            border-top: 3px solid #e74c3c;
+        }
+        
+        .prediction-card.player {
+            border-top: 3px solid #3498db;
+        }
+        
+        .prediction-card.tie {
+            border-top: 3px solid #2ecc71;
+        }
+        
+        .prediction-title {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .prediction-percent {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .prediction-card.banker .prediction-percent {
+            color: #e74c3c;
+        }
+        
+        .prediction-card.player .prediction-percent {
+            color: #3498db;
+        }
+        
+        .prediction-card.tie .prediction-percent {
+            color: #2ecc71;
+        }
+        
+        .prediction-reason {
+            font-size: 0.85rem;
+            color: #bdc3c7;
+        }
+        
+        .road-container {
+            min-height: 300px;
+        }
+        
+        .road-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .road-tabs {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .road-tab {
+            padding: 5px 15px;
+            border-radius: 20px;
+            background: rgba(44, 62, 80, 0.7);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .road-tab.active {
+            background: #3498db;
+        }
+        
+        .road-grid {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-auto-rows: 30px;
+            gap: 2px;
+            background: rgba(40, 55, 70, 0.6);
+            padding: 10px;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .road-cell {
+            background: rgba(30, 40, 50, 0.9);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .road-banker {
+            border: 2px solid #e74c3c;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+        }
+        
+        .road-player {
+            border: 2px solid #3498db;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+        }
+        
+        .road-tie {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .road-tie::before {
+            content: '';
+            width: 70%;
+            height: 2px;
+            background: #2ecc71;
+            transform: rotate(-45deg);
+        }
+        
+        .pattern-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(44, 62, 80, 0.7);
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .pattern-name {
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+        
+        .pattern-desc {
+            color: #bdc3c7;
+            line-height: 1.5;
+        }
+        
+        /* 智能優化區 */
+        .ai-optimization {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(44, 62, 80, 0.7);
+            border-radius: 10px;
+        }
+        
+        .optimization-title {
+            color: #3498db;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .progress-container {
+            background: rgba(30, 40, 50, 0.9);
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background: #2c3e50;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            transition: width 0.5s ease;
+        }
+        
+        .accuracy-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background: rgba(30, 40, 50, 0.9);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #95a5a6;
+        }
+        
+        .banker-stat {
+            border-top: 3px solid #e74c3c;
+        }
+        
+        .player-stat {
+            border-top: 3px solid #3498db;
+        }
+        
+        .tie-stat {
+            border-top: 3px solid #2ecc71;
+        }
+        
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .prediction-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .road-grid {
+                grid-template-columns: repeat(10, 1fr);
+            }
+            
+            .accuracy-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .button-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .road-tabs {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-brain"></i> 智能百家樂牌路分析系統</h1>
+            <div class="subtitle">AI優化預測 • 實時準確率追蹤 • 多牌路分析</div>
+        </header>
+        
+        <!-- 左側控制區 -->
+        <div class="control-panel">
+            <div>
+                <div class="panel-title">
+                    <i class="fas fa-dice"></i> 結果輸入
+                </div>
+                <div class="button-grid">
+                    <div class="btn btn-banker" onclick="addResult('B')">
+                        <div class="btn-icon">
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="btn-label">莊贏</div>
+                    </div>
+                    
+                    <div class="btn btn-player" onclick="addResult('P')">
+                        <div class="btn-icon">
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="btn-label">閒贏</div>
+                    </div>
+                    
+                    <div class="btn btn-tie" onclick="addResult('T')">
+                        <div class="btn-icon">
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="btn-label">和局</div>
+                    </div>
+                    
+                    <div class="btn btn-banker" onclick="addResult('B_BP')">
+                        <div class="btn-icon">
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="btn-label">莊+莊對</div>
+                        <div class="dot-container">
+                            <div class="dot dot-red"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="btn btn-player" onclick="addResult('P_PP')">
+                        <div class="btn-icon">
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="btn-label">閒+閒對</div>
+                        <div class="dot-container">
+                            <div class="dot dot-blue"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="btn btn-banker" onclick="addResult('B_PP')">
+                        <div class="btn-icon">
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="btn-label">莊+閒對</div>
+                        <div class="dot-container">
+                            <div class="dot dot-blue"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="btn btn-player" onclick="addResult('P_BP')">
+                        <div class="btn-icon">
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="btn-label">閒+莊對</div>
+                        <div class="dot-container">
+                            <div class="dot dot-red"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-buttons">
+                <div class="ctrl-btn" onclick="undoLast()">
+                    <i class="fas fa-undo"></i> 復原
+                </div>
+                <div class="ctrl-btn" onclick="resetGame()">
+                    <i class="fas fa-trash"></i> 重置
+                </div>
+            </div>
+            
+            <div class="ai-optimization">
+                <div class="optimization-title">
+                    <i class="fas fa-chart-line"></i> AI預測優化進程
+                </div>
+                <div class="progress-container">
+                    <div class="progress-header">
+                        <span>系統學習進度</span>
+                        <span id="learningProgress">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="accuracy-stats">
+                    <div class="stat-card banker-stat">
+                        <div class="stat-label">莊預測準確率</div>
+                        <div class="stat-value" id="bankerAccuracy">0%</div>
+                        <div class="stat-label" id="bankerStats">0/0</div>
+                    </div>
+                    
+                    <div class="stat-card player-stat">
+                        <div class="stat-label">閒預測準確率</div>
+                        <div class="stat-value" id="playerAccuracy">0%</div>
+                        <div class="stat-label" id="playerStats">0/0</div>
+                    </div>
+                    
+                    <div class="stat-card tie-stat">
+                        <div class="stat-label">和預測準確率</div>
+                        <div class="stat-value" id="tieAccuracy">0%</div>
+                        <div class="stat-label" id="tieStats">0/0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右側內容區 -->
+        <div class="content-area">
+            <!-- 輸入預覽區 -->
+            <div class="card input-preview">
+                <div class="preview-title">
+                    <div class="panel-title">
+                        <i class="fas fa-list"></i> 輸入記錄
+                    </div>
+                    <div class="counter">共 <span id="resultCount">0</span> 局</div>
+                </div>
+                <div class="log-container" id="inputLog">
+                    <div class="empty-log">請在左側輸入牌局結果</div>
+                </div>
+            </div>
+            
+            <!-- 預測結果區 -->
+            <div class="card prediction-container">
+                <div class="prediction-header">
+                    <div class="panel-title">
+                        <i class="fas fa-lightbulb"></i> 下注建議
+                    </div>
+                    <div class="accuracy-display">
+                        <i class="fas fa-bullseye"></i> 整體準確率: 
+                        <span class="accuracy-value" id="overallAccuracy">0%</span>
+                    </div>
+                </div>
+                
+                <div class="prediction-grid">
+                    <div class="prediction-card banker">
+                        <div class="prediction-title">
+                            <i class="fas fa-circle" style="color: #e74c3c;"></i> 押莊
+                        </div>
+                        <div class="prediction-percent" id="bankerPercent">45%</div>
+                        <div class="prediction-reason" id="bankerReason">牌路尚未形成明顯趨勢</div>
+                    </div>
+                    
+                    <div class="prediction-card player">
+                        <div class="prediction-title">
+                            <i class="fas fa-circle" style="color: #3498db;"></i> 押閒
+                        </div>
+                        <div class="prediction-percent" id="playerPercent">45%</div>
+                        <div class="prediction-reason" id="playerReason">牌路尚未形成明顯趨勢</div>
+                    </div>
+                    
+                    <div class="prediction-card tie">
+                        <div class="prediction-title">
+                            <i class="fas fa-circle" style="color: #2ecc71;"></i> 押和
+                        </div>
+                        <div class="prediction-percent" id="tiePercent">10%</div>
+                        <div class="prediction-reason" id="tieReason">和局概率通常較低</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 牌路分析區 -->
+            <div class="card road-container">
+                <div class="road-header">
+                    <div class="panel-title">
+                        <i class="fas fa-project-diagram"></i> 牌路分析
+                    </div>
+                    <div class="road-tabs">
+                        <div class="road-tab active">大路</div>
+                        <div class="road-tab">大眼路</div>
+                        <div class="road-tab">珠盤路</div>
+                        <div class="road-tab">下三路</div>
+                    </div>
+                </div>
+                
+                <div class="road-grid" id="roadDisplay">
+                    <!-- 牌路將動態生成 -->
+                </div>
+                
+                <div class="pattern-info">
+                    <div class="pattern-name" id="patternName">尚未檢測到明顯牌路</div>
+                    <div class="pattern-desc" id="patternDesc">請輸入更多牌局結果以進行分析</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 遊戲數據
+        let gameResults = [];
+        let predictionStats = {
+            total: 0,
+            correct: 0,
+            banker: { total: 0, correct: 0 },
+            player: { total: 0, correct: 0 },
+            tie: { total: 0, correct: 0 }
+        };
+        let lastPredictions = null;
+        let learningProgress = 0;
+        let roadPatterns = {
+            longDragon: { name: "長龍模式", threshold: 5 },
+            singleJump: { name: "單跳模式", threshold: 3 },
+            irregular: { name: "不規則模式" },
+            longBanker: { name: "長莊", threshold: 4 },
+            longPlayer: { name: "長閒", threshold: 4 },
+            bankerPlayerJump: { name: "莊閒單跳" },
+            playerBankerJump: { name: "閒莊單跳" },
+            bankerPlayerPair: { name: "一莊兩閒" },
+            playerBankerPair: { name: "一閒兩莊" }
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDisplay();
+            simulateLearning();
+        });
+        
+        // 模擬AI學習過程
+        function simulateLearning() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 5;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                }
+                updateLearningProgress(progress);
+            }, 200);
+        }
+        
+        function updateLearningProgress(progress) {
+            learningProgress = progress;
+            document.getElementById('learningProgress').textContent = Math.round(progress) + '%';
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+        
+        // 主要功能函數
+        function addResult(result) {
+            // 檢查並記錄上一次預測的準確性
+            if (lastPredictions && gameResults.length > 0) {
+                recordPredictionAccuracy(result);
+            }
+            
+            gameResults.push(result);
+            updateDisplay();
+        }
+        
+        function undoLast() {
+            if (gameResults.length > 0) {
+                // 如果撤銷，移除最後一次預測記錄
+                if (predictionStats.total > 0) {
+                    predictionStats.total--;
+                    
+                    const lastResult = gameResults[gameResults.length - 1][0];
+                    if (lastResult === 'B') {
+                        predictionStats.banker.total--;
+                    } else if (lastResult === 'P') {
+                        predictionStats.player.total--;
+                    } else if (lastResult === 'T') {
+                        predictionStats.tie.total--;
+                    }
+                }
+                
+                gameResults.pop();
+                updateDisplay();
+            }
+        }
+        
+        function resetGame() {
+            gameResults = [];
+            resetPredictionStats();
+            updateDisplay();
+        }
+        
+        function resetPredictionStats() {
+            predictionStats = {
+                total: 0,
+                correct: 0,
+                banker: { total: 0, correct: 0 },
+                player: { total: 0, correct: 0 },
+                tie: { total: 0, correct: 0 }
+            };
+            lastPredictions = null;
+        }
+        
+        // 記錄預測準確性
+        function recordPredictionAccuracy(result) {
+            predictionStats.total++;
+            
+            const actualType = result[0]; // 'B', 'P', 'T'
+            const predictedType = lastPredictions[0].type; // 'banker', 'player', 'tie'
+            
+            // 轉換預測類型為可比較格式
+            let predictedSimple = '';
+            if (predictedType === 'banker') predictedSimple = 'B';
+            else if (predictedType === 'player') predictedSimple = 'P';
+            else if (predictedType === 'tie') predictedSimple = 'T';
+            
+            // 檢查預測是否正確
+            const isCorrect = actualType === predictedSimple;
+            
+            if (isCorrect) {
+                predictionStats.correct++;
+                
+                // 更新特定類型的準確率
+                if (actualType === 'B') {
+                    predictionStats.banker.correct++;
+                    predictionStats.banker.total++;
+                } else if (actualType === 'P') {
+                    predictionStats.player.correct++;
+                    predictionStats.player.total++;
+                } else if (actualType === 'T') {
+                    predictionStats.tie.correct++;
+                    predictionStats.tie.total++;
+                }
+            } else {
+                // 更新特定類型的總數
+                if (actualType === 'B') {
+                    predictionStats.banker.total++;
+                } else if (actualType === 'P') {
+                    predictionStats.player.total++;
+                } else if (actualType === 'T') {
+                    predictionStats.tie.total++;
+                }
+            }
+            
+            // 根據結果調整學習進度
+            if (isCorrect) {
+                updateLearningProgress(Math.min(100, learningProgress + 0.5));
+            } else {
+                updateLearningProgress(Math.max(0, learningProgress - 0.2));
+            }
+        }
+        
+        // 更新顯示
+        function updateDisplay() {
+            updateInputLog();
+            updateRoadDisplay();
+            updatePrediction();
+            updateAccuracyStats();
+        }
+        
+        // 更新輸入記錄
+        function updateInputLog() {
+            const logContainer = document.getElementById('inputLog');
+            const resultCount = document.getElementById('resultCount');
+            
+            logContainer.innerHTML = '';
+            resultCount.textContent = gameResults.length;
+            
+            if (gameResults.length === 0) {
+                logContainer.innerHTML = '<div class="empty-log">請在左側輸入牌局結果</div>';
+                return;
+            }
+            
+            gameResults.forEach(result => {
+                const logItem = document.createElement('div');
+                let className = '';
+                let text = '';
+                let hasBankerPair = false;
+                let hasPlayerPair = false;
+                
+                switch(result) {
+                    case 'B':
+                        className = 'log-banker';
+                        text = '莊';
+                        break;
+                    case 'P':
+                        className = 'log-player';
+                        text = '閒';
+                        break;
+                    case 'T':
+                        className = 'log-tie';
+                        text = '和';
+                        break;
+                    case 'B_BP':
+                        className = 'log-banker';
+                        text = '莊';
+                        hasBankerPair = true;
+                        break;
+                    case 'P_PP':
+                        className = 'log-player';
+                        text = '閒';
+                        hasPlayerPair = true;
+                        break;
+                    case 'B_PP':
+                        className = 'log-banker';
+                        text = '莊';
+                        hasPlayerPair = true;
+                        break;
+                    case 'P_BP':
+                        className = 'log-player';
+                        text = '閒';
+                        hasBankerPair = true;
+                        break;
+                }
+                
+                logItem.className = `log-item ${className}`;
+                logItem.textContent = text;
+                
+                if (hasBankerPair) {
+                    const dot = document.createElement('div');
+                    dot.className = 'pair-dot dot-banker';
+                    logItem.appendChild(dot);
+                }
+                
+                if (hasPlayerPair) {
+                    const dot = document.createElement('div');
+                    dot.className = 'pair-dot dot-player';
+                    logItem.appendChild(dot);
+                }
+                
+                logContainer.appendChild(logItem);
+            });
+        }
+        
+        // 更新牌路顯示
+        function updateRoadDisplay() {
+            const roadContainer = document.getElementById('roadDisplay');
+            roadContainer.innerHTML = '';
+            
+            if (gameResults.length === 0) {
+                for (let i = 0; i < 60; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'road-cell';
+                    roadContainer.appendChild(cell);
+                }
+                return;
+            }
+            
+            // 簡化的大路生成邏輯
+            let lastResult = '';
+            let row = 0;
+            let col = 0;
+            let maxCol = 0;
+            const grid = [];
+            
+            // 初始化網格
+            for (let i = 0; i < 6; i++) {
+                grid[i] = Array(15).fill(null);
+            }
+            
+            gameResults.forEach(result => {
+                const mainResult = result[0];
+                
+                if (mainResult === 'T') {
+                    // 和局 - 添加到上一個結果
+                    if (col > 0 && row > 0) {
+                        // 在上一個結果上添加和局標記
+                        grid[row][col] = {type: grid[row][col].type, tie: true};
+                    }
+                } else {
+                    // 莊或閒
+                    if (mainResult === lastResult) {
+                        // 相同結果，向下移動
+                        row++;
+                        if (row >= 6) {
+                            row = 0;
+                            col++;
+                        }
+                    } else {
+                        // 不同結果，向右移動
+                        col++;
+                        row = 0;
+                        if (col >= 15) {
+                            col = 0;
+                        }
+                    }
+                    
+                    if (col >= maxCol) maxCol = col;
+                    grid[row][col] = {type: mainResult};
+                    lastResult = mainResult;
+                }
+            });
+            
+            // 渲染網格
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 15; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'road-cell';
+                    
+                    if (grid[r][c]) {
+                        if (grid[r][c].type === 'B') {
+                            const circle = document.createElement('div');
+                            circle.className = 'road-banker';
+                            cell.appendChild(circle);
+                        } else if (grid[r][c].type === 'P') {
+                            const circle = document.createElement('div');
+                            circle.className = 'road-player';
+                            cell.appendChild(circle);
+                        }
+                        
+                        if (grid[r][c].tie) {
+                            const tie = document.createElement('div');
+                            tie.className = 'road-tie';
+                            cell.appendChild(tie);
+                        }
+                    }
+                    
+                    roadContainer.appendChild(cell);
+                }
+            }
+        }
+        
+        // 分析牌路模式
+        function analyzeRoadPattern() {
+            if (gameResults.length < 4) {
+                return null;
+            }
+            
+            const lastResults = gameResults.slice(-10);
+            const bankerStreak = checkStreak('B');
+            const playerStreak = checkStreak('P');
+            
+            // 長莊/長閒檢測
+            if (bankerStreak >= 4) {
+                return {
+                    pattern: 'longBanker',
+                    length: bankerStreak,
+                    confidence: Math.min(0.95, 0.6 + bankerStreak * 0.1)
+                };
+            }
+            
+            if (playerStreak >= 4) {
+                return {
+                    pattern: 'longPlayer',
+                    length: playerStreak,
+                    confidence: Math.min(0.95, 0.6 + playerStreak * 0.1)
+                };
+            }
+            
+            // 單跳模式檢測
+            if (isSingleJump(lastResults)) {
+                return {
+                    pattern: 'singleJump',
+                    confidence: 0.75
+                };
+            }
+            
+            // 一莊兩閒/一閒兩莊檢測
+            const pattern = checkBankerPlayerPattern(lastResults);
+            if (pattern) {
+                return pattern;
+            }
+            
+            // 默認不規則模式
+            return {
+                pattern: 'irregular',
+                confidence: 0.5
+            };
+        }
+        
+        // 檢查連莊/連閒
+        function checkStreak(type) {
+            let streak = 0;
+            for (let i = gameResults.length - 1; i >= 0; i--) {
+                if (gameResults[i][0] === type) {
+                    streak++;
+                } else if (gameResults[i][0] !== 'T') {
+                    break;
+                }
+            }
+            return streak;
+        }
+        
+        // 檢查單跳模式
+        function isSingleJump(results) {
+            if (results.length < 4) return false;
+            
+            for (let i = results.length - 1; i >= results.length - 3; i--) {
+                if (results[i][0] === results[i-1][0] && results[i][0] !== 'T') {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+        
+        // 檢查一莊兩閒/一閒兩莊模式
+        function checkBankerPlayerPattern(results) {
+            if (results.length < 6) return null;
+            
+            const seq = results.slice(-6).map(r => r[0]);
+            
+            // 一莊兩閒: 莊,閒,閒,莊,閒,閒
+            if (seq[0] === 'B' && seq[1] === 'P' && seq[2] === 'P' && 
+                seq[3] === 'B' && seq[4] === 'P' && seq[5] === 'P') {
+                return {
+                    pattern: 'bankerPlayerPair',
+                    confidence: 0.7
+                };
+            }
+            
+            // 一閒兩莊: 閒,莊,莊,閒,莊,莊
+            if (seq[0] === 'P' && seq[1] === 'B' && seq[2] === 'B' && 
+                seq[3] === 'P' && seq[4] === 'B' && seq[5] === 'B') {
+                return {
+                    pattern: 'playerBankerPair',
+                    confidence: 0.7
+                };
+            }
+            
+            return null;
+        }
+        
+        // 更新預測結果
+        function updatePrediction() {
+            const patternName = document.getElementById('patternName');
+            const patternDesc = document.getElementById('patternDesc');
+            
+            const bankerPercent = document.getElementById('bankerPercent');
+            const playerPercent = document.getElementById('playerPercent');
+            const tiePercent = document.getElementById('tiePercent');
+            
+            const bankerReason = document.getElementById('bankerReason');
+            const playerReason = document.getElementById('playerReason');
+            const tieReason = document.getElementById('tieReason');
+            
+            if (gameResults.length === 0) {
+                patternName.textContent = "尚未檢測到明顯牌路";
+                patternDesc.textContent = "請輸入更多牌局結果以進行分析";
+                
+                bankerPercent.textContent = "45%";
+                playerPercent.textContent = "45%";
+                tiePercent.textContent = "10%";
+                
+                bankerReason.textContent = "牌路尚未形成明顯趨勢";
+                playerReason.textContent = "牌路尚未形成明顯趨勢";
+                tieReason.textContent = "和局概率通常較低";
+                
+                // 保存預測結果用於後續準確率計算
+                lastPredictions = [
+                    { type: 'banker', probability: 45 },
+                    { type: 'player', probability: 45 },
+                    { type: 'tie', probability: 10 }
+                ];
+                
+                return;
+            }
+            
+            const pattern = analyzeRoadPattern();
+            
+            if (!pattern) {
+                patternName.textContent = "初步分析中";
+                patternDesc.textContent = "需要更多數據來確定牌路模式";
+                
+                bankerPercent.textContent = "45%";
+                playerPercent.textContent = "45%";
+                tiePercent.textContent = "10%";
+                
+                bankerReason.textContent = "牌路尚未形成明顯趨勢";
+                playerReason.textContent = "牌路尚未形成明顯趨勢";
+                tieReason.textContent = "和局概率通常較低";
+                
+                // 保存預測結果用於後續準確率計算
+                lastPredictions = [
+                    { type: 'banker', probability: 45 },
+                    { type: 'player', probability: 45 },
+                    { type: 'tie', probability: 10 }
+                ];
+                
+                return;
+            }
+            
+            // 根據不同模式設置預測概率
+            let bankerProb = 45;
+            let playerProb = 45;
+            let tieProb = 10;
+            
+            switch(pattern.pattern) {
+                case 'longBanker':
+                    patternName.textContent = "長莊模式";
+                    patternDesc.textContent = `莊家連續勝利 ${pattern.length} 局，形成長莊趨勢，建議跟隨莊家`;
+                    bankerProb = Math.min(85, 50 + pattern.length * 8);
+                    playerProb = 100 - bankerProb - tieProb;
+                    bankerReason.textContent = `長莊趨勢明顯 (連續 ${pattern.length} 局)`;
+                    playerReason.textContent = "長莊可能中斷，風險較高";
+                    tieReason.textContent = "長莊期間和局機率較低";
+                    break;
+                    
+                case 'longPlayer':
+                    patternName.textContent = "長閒模式";
+                    patternDesc.textContent = `閒家連續勝利 ${pattern.length} 局，形成長閒趨勢，建議跟隨閒家`;
+                    playerProb = Math.min(85, 50 + pattern.length * 8);
+                    bankerProb = 100 - playerProb - tieProb;
+                    playerReason.textContent = `長閒趨勢明顯 (連續 ${pattern.length} 局)`;
+                    bankerReason.textContent = "長閒可能中斷，風險較高";
+                    tieReason.textContent = "長閒期間和局機率較低";
+                    break;
+                    
+                case 'singleJump':
+                    patternName.textContent = "單跳模式";
+                    patternDesc.textContent = "牌路呈現單跳模式（莊閒交替），建議反向上局結果投注";
+                    bankerProb = 65;
+                    playerProb = 65;
+                    tieProb = 10;
+                    bankerReason.textContent = "單跳模式，預期莊家可能勝出";
+                    playerReason.textContent = "單跳模式，預期閒家可能勝出";
+                    tieReason.textContent = "單跳期間和局機率較低";
+                    break;
+                    
+                case 'bankerPlayerPair':
+                    patternName.textContent = "一莊兩閒模式";
+                    patternDesc.textContent = "牌路呈現一莊兩閒模式，建議在莊出現後投注閒";
+                    bankerProb = 40;
+                    playerProb = 55;
+                    tieProb = 5;
+                    bankerReason.textContent = "一莊兩閒模式，莊家可能出現後轉閒";
+                    playerReason.textContent = "一莊兩閒模式，閒家可能連勝兩局";
+                    tieReason.textContent = "模式穩定，和局機率低";
+                    break;
+                    
+                case 'playerBankerPair':
+                    patternName.textContent = "一閒兩莊模式";
+                    patternDesc.textContent = "牌路呈現一閒兩莊模式，建議在閒出現後投注莊";
+                    bankerProb = 55;
+                    playerProb = 40;
+                    tieProb = 5;
+                    bankerReason.textContent = "一閒兩莊模式，莊家可能連勝兩局";
+                    playerReason.textContent = "一閒兩莊模式，閒家可能出現後轉莊";
+                    tieReason.textContent = "模式穩定，和局機率低";
+                    break;
+                    
+                default:
+                    patternName.textContent = "不規則模式";
+                    patternDesc.textContent = "牌路不規則，無明顯趨勢，建議謹慎投注或觀察";
+                    bankerReason.textContent = "牌路不規則，莊閒概率接近";
+                    playerReason.textContent = "牌路不規則，莊閒概率接近";
+                    tieReason.textContent = "和局概率通常較低";
+            }
+            
+            bankerPercent.textContent = `${bankerProb}%`;
+            playerPercent.textContent = `${playerProb}%`;
+            tiePercent.textContent = `${tieProb}%`;
+            
+            // 保存預測結果用於後續準確率計算
+            lastPredictions = [
+                { type: 'banker', probability: bankerProb },
+                { type: 'player', probability: playerProb },
+                { type: 'tie', probability: tieProb }
+            ];
+        }
+        
+        // 更新準確率統計顯示
+        function updateAccuracyStats() {
+            // 整體準確率
+            const overallAccuracy = predictionStats.total > 0 ? 
+                Math.round((predictionStats.correct / predictionStats.total) * 100) : 0;
+            document.getElementById('overallAccuracy').textContent = overallAccuracy + '%';
+            
+            // 莊預測準確率
+            const bankerAccuracy = predictionStats.banker.total > 0 ? 
+                Math.round((predictionStats.banker.correct / predictionStats.banker.total) * 100) : 0;
+            document.getElementById('bankerAccuracy').textContent = bankerAccuracy + '%';
+            document.getElementById('bankerStats').textContent = 
+                `${predictionStats.banker.correct}/${predictionStats.banker.total}`;
+            
+            // 閒預測準確率
+            const playerAccuracy = predictionStats.player.total > 0 ? 
+                Math.round((predictionStats.player.correct / predictionStats.player.total) * 100) : 0;
+            document.getElementById('playerAccuracy').textContent = playerAccuracy + '%';
+            document.getElementById('playerStats').textContent = 
+                `${predictionStats.player.correct}/${predictionStats.player.total}`;
+            
+            // 和預測準確率
+            const tieAccuracy = predictionStats.tie.total > 0 ? 
+                Math.round((predictionStats.tie.correct / predictionStats.tie.total) * 100) : 0;
+            document.getElementById('tieAccuracy').textContent = tieAccuracy + '%';
+            document.getElementById('tieStats').textContent = 
+                `${predictionStats.tie.correct}/${predictionStats.tie.total}`;
+        }
+    </script>
+</body>
+</html>
+```
+
+
+
+
+
+
+
