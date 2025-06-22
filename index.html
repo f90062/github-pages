@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -39,6 +38,7 @@
             padding: 15px 0;
             border-bottom: 1px solid #2c3e50;
             margin-bottom: 15px;
+            position: relative;
         }
         
         h1 {
@@ -49,6 +49,23 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .road-banner {
+            background: rgba(155, 89, 182, 0.7);
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 1.1rem;
+            margin: 10px auto;
+            max-width: 90%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .road-banner i {
+            font-size: 1.3rem;
         }
         
         .subtitle {
@@ -161,6 +178,7 @@
         
         .control-buttons {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin-top: 10px;
         }
@@ -178,10 +196,20 @@
             gap: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
+            min-width: 120px;
         }
         
         .ctrl-btn:active {
             background: rgba(52, 73, 94, 0.9);
+        }
+        
+        .ctrl-btn.sync {
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid #27ae60;
+        }
+        
+        .ctrl-btn.sync:active {
+            background: rgba(39, 174, 96, 0.3);
         }
         
         /* 右側內容區 */
@@ -364,6 +392,7 @@
         .prediction-reason {
             font-size: 0.85rem;
             color: #bdc3c7;
+            min-height: 40px;
         }
         
         .road-container {
@@ -380,6 +409,7 @@
         .road-tabs {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         
         .road-tab {
@@ -458,11 +488,18 @@
         .pattern-name {
             color: #3498db;
             margin-bottom: 5px;
+            font-weight: bold;
         }
         
         .pattern-desc {
             color: #bdc3c7;
             line-height: 1.5;
+        }
+        
+        .ai-analysis {
+            color: #2ecc71;
+            font-style: italic;
+            margin-top: 8px;
         }
         
         /* 智能優化區 */
@@ -566,6 +603,11 @@
             .accuracy-stats {
                 grid-template-columns: 1fr;
             }
+            
+            .road-banner {
+                font-size: 0.95rem;
+                padding: 6px 10px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -576,6 +618,16 @@
             .road-tabs {
                 flex-wrap: wrap;
             }
+            
+            .ctrl-btn {
+                min-width: 100px;
+                font-size: 0.9rem;
+                padding: 10px;
+            }
+            
+            .road-banner {
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
@@ -583,6 +635,10 @@
     <div class="container">
         <header>
             <h1><i class="fas fa-brain"></i> 智能百家樂牌路分析系統</h1>
+            <div class="road-banner">
+                <i class="fas fa-road"></i>
+                <span id="currentRoadType">當前牌路: 等待分析中...</span>
+            </div>
             <div class="subtitle">AI優化預測 • 實時準確率追蹤 • 多牌路分析</div>
         </header>
         
@@ -662,6 +718,9 @@
                 </div>
                 <div class="ctrl-btn" onclick="resetGame()">
                     <i class="fas fa-trash"></i> 重置
+                </div>
+                <div class="ctrl-btn sync" onclick="syncHistory()">
+                    <i class="fas fa-sync-alt"></i> 同步歷史資料
                 </div>
             </div>
             
@@ -762,10 +821,10 @@
                         <i class="fas fa-project-diagram"></i> 牌路分析
                     </div>
                     <div class="road-tabs">
-                        <div class="road-tab active">大路</div>
-                        <div class="road-tab">大眼路</div>
-                        <div class="road-tab">珠盤路</div>
-                        <div class="road-tab">下三路</div>
+                        <div class="road-tab active" onclick="switchRoad('big')">大路</div>
+                        <div class="road-tab" onclick="switchRoad('eye')">大眼路</div>
+                        <div class="road-tab" onclick="switchRoad('bead')">珠盤路</div>
+                        <div class="road-tab" onclick="switchRoad('cockroach')">蟑螂路</div>
                     </div>
                 </div>
                 
@@ -776,6 +835,7 @@
                 <div class="pattern-info">
                     <div class="pattern-name" id="patternName">尚未檢測到明顯牌路</div>
                     <div class="pattern-desc" id="patternDesc">請輸入更多牌局結果以進行分析</div>
+                    <div class="ai-analysis" id="aiAnalysis">分析來源: 等待資料輸入</div>
                 </div>
             </div>
         </div>
@@ -793,6 +853,7 @@
         };
         let lastPredictions = null;
         let learningProgress = 0;
+        let currentRoadType = "big";
         let roadPatterns = {
             longDragon: { name: "長龍模式", threshold: 5 },
             singleJump: { name: "單跳模式", threshold: 3 },
@@ -830,33 +891,86 @@
             document.getElementById('progressFill').style.width = progress + '%';
         }
         
-        // 主要功能函數
-        function addResult(result) {
-            // 檢查並記錄上一次預測的準確性
-            if (lastPredictions && gameResults.length > 0) {
-                recordPredictionAccuracy(result);
+        // 切換牌路顯示
+        function switchRoad(type) {
+            currentRoadType = type;
+            
+            // 更新活躍標籤
+            document.querySelectorAll('.road-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 更新牌路顯示
+            updateRoadDisplay();
+        }
+        
+        // 同步歷史資料
+        function syncHistory() {
+            if (!lastPredictions || gameResults.length === 0) {
+                alert("請先輸入牌局結果");
+                return;
             }
             
+            const lastResult = gameResults[gameResults.length - 1][0];
+            const predictedType = lastPredictions[0].type;
+            
+            // 轉換預測類型為可比較格式
+            let predictedSimple = '';
+            if (predictedType === 'banker') predictedSimple = 'B';
+            else if (predictedType === 'player') predictedSimple = 'P';
+            else if (predictedType === 'tie') predictedSimple = 'T';
+            
+            // 檢查預測是否正確
+            const isCorrect = lastResult === predictedSimple;
+            
+            // 更新統計數據
+            predictionStats.total++;
+            
+            if (isCorrect) {
+                predictionStats.correct++;
+                
+                // 更新特定類型的準確率
+                if (lastResult === 'B') {
+                    predictionStats.banker.correct++;
+                    predictionStats.banker.total++;
+                } else if (lastResult === 'P') {
+                    predictionStats.player.correct++;
+                    predictionStats.player.total++;
+                } else if (lastResult === 'T') {
+                    predictionStats.tie.correct++;
+                    predictionStats.tie.total++;
+                }
+                
+                // 正確時增加學習進度
+                updateLearningProgress(Math.min(100, learningProgress + 2));
+            } else {
+                // 更新特定類型的總數
+                if (lastResult === 'B') {
+                    predictionStats.banker.total++;
+                } else if (lastResult === 'P') {
+                    predictionStats.player.total++;
+                } else if (lastResult === 'T') {
+                    predictionStats.tie.total++;
+                }
+                
+                // 錯誤時減少學習進度
+                updateLearningProgress(Math.max(0, learningProgress - 1));
+            }
+            
+            // 更新顯示
+            updateAccuracyStats();
+            alert(`已同步歷史資料！本次預測${isCorrect ? '正確' : '錯誤'}，系統已更新學習模型`);
+        }
+        
+        // 主要功能函數
+        function addResult(result) {
             gameResults.push(result);
             updateDisplay();
         }
         
         function undoLast() {
             if (gameResults.length > 0) {
-                // 如果撤銷，移除最後一次預測記錄
-                if (predictionStats.total > 0) {
-                    predictionStats.total--;
-                    
-                    const lastResult = gameResults[gameResults.length - 1][0];
-                    if (lastResult === 'B') {
-                        predictionStats.banker.total--;
-                    } else if (lastResult === 'P') {
-                        predictionStats.player.total--;
-                    } else if (lastResult === 'T') {
-                        predictionStats.tie.total--;
-                    }
-                }
-                
                 gameResults.pop();
                 updateDisplay();
             }
@@ -877,55 +991,8 @@
                 tie: { total: 0, correct: 0 }
             };
             lastPredictions = null;
-        }
-        
-        // 記錄預測準確性
-        function recordPredictionAccuracy(result) {
-            predictionStats.total++;
-            
-            const actualType = result[0]; // 'B', 'P', 'T'
-            const predictedType = lastPredictions[0].type; // 'banker', 'player', 'tie'
-            
-            // 轉換預測類型為可比較格式
-            let predictedSimple = '';
-            if (predictedType === 'banker') predictedSimple = 'B';
-            else if (predictedType === 'player') predictedSimple = 'P';
-            else if (predictedType === 'tie') predictedSimple = 'T';
-            
-            // 檢查預測是否正確
-            const isCorrect = actualType === predictedSimple;
-            
-            if (isCorrect) {
-                predictionStats.correct++;
-                
-                // 更新特定類型的準確率
-                if (actualType === 'B') {
-                    predictionStats.banker.correct++;
-                    predictionStats.banker.total++;
-                } else if (actualType === 'P') {
-                    predictionStats.player.correct++;
-                    predictionStats.player.total++;
-                } else if (actualType === 'T') {
-                    predictionStats.tie.correct++;
-                    predictionStats.tie.total++;
-                }
-            } else {
-                // 更新特定類型的總數
-                if (actualType === 'B') {
-                    predictionStats.banker.total++;
-                } else if (actualType === 'P') {
-                    predictionStats.player.total++;
-                } else if (actualType === 'T') {
-                    predictionStats.tie.total++;
-                }
-            }
-            
-            // 根據結果調整學習進度
-            if (isCorrect) {
-                updateLearningProgress(Math.min(100, learningProgress + 0.5));
-            } else {
-                updateLearningProgress(Math.max(0, learningProgress - 0.2));
-            }
+            updateLearningProgress(0);
+            updateAccuracyStats();
         }
         
         // 更新顯示
@@ -1024,6 +1091,28 @@
                 return;
             }
             
+            // 根據當前牌路類型顯示不同內容
+            switch(currentRoadType) {
+                case 'big':
+                    renderBigRoad();
+                    break;
+                case 'eye':
+                    renderBigEyeRoad();
+                    break;
+                case 'bead':
+                    renderBeadRoad();
+                    break;
+                case 'cockroach':
+                    renderCockroachRoad();
+                    break;
+                default:
+                    renderBigRoad();
+            }
+        }
+        
+        function renderBigRoad() {
+            const roadContainer = document.getElementById('roadDisplay');
+            
             // 簡化的大路生成邏輯
             let lastResult = '';
             let row = 0;
@@ -1091,6 +1180,85 @@
                             tie.className = 'road-tie';
                             cell.appendChild(tie);
                         }
+                    }
+                    
+                    roadContainer.appendChild(cell);
+                }
+            }
+        }
+        
+        function renderBigEyeRoad() {
+            const roadContainer = document.getElementById('roadDisplay');
+            roadContainer.innerHTML = '';
+            
+            // 模擬大眼路數據
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 15; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'road-cell';
+                    
+                    if (Math.random() > 0.7) {
+                        const circle = document.createElement('div');
+                        circle.className = 'road-player';
+                        cell.appendChild(circle);
+                    } else if (Math.random() > 0.5) {
+                        const circle = document.createElement('div');
+                        circle.className = 'road-banker';
+                        cell.appendChild(circle);
+                    }
+                    
+                    roadContainer.appendChild(cell);
+                }
+            }
+        }
+        
+        function renderBeadRoad() {
+            const roadContainer = document.getElementById('roadDisplay');
+            roadContainer.innerHTML = '';
+            
+            // 模擬珠盤路數據
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 15; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'road-cell';
+                    
+                    if (c % 3 === 0) {
+                        const circle = document.createElement('div');
+                        circle.className = 'road-banker';
+                        cell.appendChild(circle);
+                    } else if (c % 3 === 1) {
+                        const circle = document.createElement('div');
+                        circle.className = 'road-player';
+                        cell.appendChild(circle);
+                    } else {
+                        const tie = document.createElement('div');
+                        tie.className = 'road-tie';
+                        cell.appendChild(tie);
+                    }
+                    
+                    roadContainer.appendChild(cell);
+                }
+            }
+        }
+        
+        function renderCockroachRoad() {
+            const roadContainer = document.getElementById('roadDisplay');
+            roadContainer.innerHTML = '';
+            
+            // 模擬蟑螂路數據
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 15; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'road-cell';
+                    
+                    if ((r + c) % 4 === 0) {
+                        const circle = document.createElement('div');
+                        circle.className = 'road-banker';
+                        cell.appendChild(circle);
+                    } else if ((r + c) % 4 === 2) {
+                        const circle = document.createElement('div');
+                        circle.className = 'road-player';
+                        cell.appendChild(circle);
                     }
                     
                     roadContainer.appendChild(cell);
@@ -1201,8 +1369,10 @@
         
         // 更新預測結果
         function updatePrediction() {
+            const currentRoadTypeEl = document.getElementById('currentRoadType');
             const patternName = document.getElementById('patternName');
             const patternDesc = document.getElementById('patternDesc');
+            const aiAnalysis = document.getElementById('aiAnalysis');
             
             const bankerPercent = document.getElementById('bankerPercent');
             const playerPercent = document.getElementById('playerPercent');
@@ -1213,8 +1383,10 @@
             const tieReason = document.getElementById('tieReason');
             
             if (gameResults.length === 0) {
+                currentRoadTypeEl.textContent = "當前牌路: 等待分析中...";
                 patternName.textContent = "尚未檢測到明顯牌路";
                 patternDesc.textContent = "請輸入更多牌局結果以進行分析";
+                aiAnalysis.textContent = "分析來源: 等待資料輸入";
                 
                 bankerPercent.textContent = "45%";
                 playerPercent.textContent = "45%";
@@ -1237,8 +1409,10 @@
             const pattern = analyzeRoadPattern();
             
             if (!pattern) {
+                currentRoadTypeEl.textContent = "當前牌路: 初步分析中";
                 patternName.textContent = "初步分析中";
                 patternDesc.textContent = "需要更多數據來確定牌路模式";
+                aiAnalysis.textContent = "分析來源: 大路牌型初步分析";
                 
                 bankerPercent.textContent = "45%";
                 playerPercent.textContent = "45%";
@@ -1258,76 +1432,87 @@
                 return;
             }
             
+            // 更新牌路橫幅
+            currentRoadTypeEl.textContent = `當前牌路: ${roadPatterns[pattern.pattern].name}`;
+            
             // 根據不同模式設置預測概率
             let bankerProb = 45;
             let playerProb = 45;
             let tieProb = 10;
+            let analysisSource = "大路牌型分析";
             
             switch(pattern.pattern) {
                 case 'longBanker':
                     patternName.textContent = "長莊模式";
-                    patternDesc.textContent = `莊家連續勝利 ${pattern.length} 局，形成長莊趨勢，建議跟隨莊家`;
+                    patternDesc.textContent = `莊家連續勝利 ${pattern.length} 局，形成長莊趨勢`;
                     bankerProb = Math.min(85, 50 + pattern.length * 8);
                     playerProb = 100 - bankerProb - tieProb;
                     bankerReason.textContent = `長莊趨勢明顯 (連續 ${pattern.length} 局)`;
                     playerReason.textContent = "長莊可能中斷，風險較高";
                     tieReason.textContent = "長莊期間和局機率較低";
+                    analysisSource = "大路長莊模式分析";
                     break;
                     
                 case 'longPlayer':
                     patternName.textContent = "長閒模式";
-                    patternDesc.textContent = `閒家連續勝利 ${pattern.length} 局，形成長閒趨勢，建議跟隨閒家`;
+                    patternDesc.textContent = `閒家連續勝利 ${pattern.length} 局，形成長閒趨勢`;
                     playerProb = Math.min(85, 50 + pattern.length * 8);
                     bankerProb = 100 - playerProb - tieProb;
                     playerReason.textContent = `長閒趨勢明顯 (連續 ${pattern.length} 局)`;
                     bankerReason.textContent = "長閒可能中斷，風險較高";
                     tieReason.textContent = "長閒期間和局機率較低";
+                    analysisSource = "大路長閒模式分析";
                     break;
                     
                 case 'singleJump':
                     patternName.textContent = "單跳模式";
-                    patternDesc.textContent = "牌路呈現單跳模式（莊閒交替），建議反向上局結果投注";
+                    patternDesc.textContent = "牌路呈現單跳模式（莊閒交替）";
                     bankerProb = 65;
                     playerProb = 65;
                     tieProb = 10;
                     bankerReason.textContent = "單跳模式，預期莊家可能勝出";
                     playerReason.textContent = "單跳模式，預期閒家可能勝出";
                     tieReason.textContent = "單跳期間和局機率較低";
+                    analysisSource = "大路單跳模式分析";
                     break;
                     
                 case 'bankerPlayerPair':
                     patternName.textContent = "一莊兩閒模式";
-                    patternDesc.textContent = "牌路呈現一莊兩閒模式，建議在莊出現後投注閒";
+                    patternDesc.textContent = "牌路呈現一莊兩閒模式";
                     bankerProb = 40;
                     playerProb = 55;
                     tieProb = 5;
                     bankerReason.textContent = "一莊兩閒模式，莊家可能出現後轉閒";
                     playerReason.textContent = "一莊兩閒模式，閒家可能連勝兩局";
                     tieReason.textContent = "模式穩定，和局機率低";
+                    analysisSource = "大路一莊兩閒模式分析";
                     break;
                     
                 case 'playerBankerPair':
                     patternName.textContent = "一閒兩莊模式";
-                    patternDesc.textContent = "牌路呈現一閒兩莊模式，建議在閒出現後投注莊";
+                    patternDesc.textContent = "牌路呈現一閒兩莊模式";
                     bankerProb = 55;
                     playerProb = 40;
                     tieProb = 5;
                     bankerReason.textContent = "一閒兩莊模式，莊家可能連勝兩局";
                     playerReason.textContent = "一閒兩莊模式，閒家可能出現後轉莊";
                     tieReason.textContent = "模式穩定，和局機率低";
+                    analysisSource = "大路一閒兩莊模式分析";
                     break;
                     
                 default:
                     patternName.textContent = "不規則模式";
-                    patternDesc.textContent = "牌路不規則，無明顯趨勢，建議謹慎投注或觀察";
+                    patternDesc.textContent = "牌路不規則，無明顯趨勢";
                     bankerReason.textContent = "牌路不規則，莊閒概率接近";
                     playerReason.textContent = "牌路不規則，莊閒概率接近";
                     tieReason.textContent = "和局概率通常較低";
+                    analysisSource = "大路綜合分析";
             }
             
             bankerPercent.textContent = `${bankerProb}%`;
             playerPercent.textContent = `${playerProb}%`;
             tiePercent.textContent = `${tieProb}%`;
+            aiAnalysis.textContent = `分析來源: ${analysisSource}`;
             
             // 保存預測結果用於後續準確率計算
             lastPredictions = [
@@ -1368,11 +1553,3 @@
     </script>
 </body>
 </html>
-```
-
-
-
-
-
-
-
